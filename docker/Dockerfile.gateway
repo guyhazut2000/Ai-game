@@ -1,0 +1,36 @@
+# Build gateway (run from repo root)
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY client/package.json ./client/
+COPY services/gateway/package.json ./services/gateway/
+COPY shared/package.json ./shared/
+
+RUN npm ci
+
+COPY shared ./shared
+COPY services/gateway ./services/gateway
+
+RUN npm run build -w shared && npm run build -w gateway
+
+# Run gateway
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY package.json package-lock.json* ./
+COPY client/package.json ./client/
+COPY services/gateway/package.json ./services/gateway/
+COPY shared/package.json ./shared/
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/services/gateway ./services/gateway
+
+EXPOSE 3000
+WORKDIR /app/services/gateway
+CMD ["node", "dist/index.js"]

@@ -1,0 +1,48 @@
+# Dev: run infra (Postgres, Redis). Run client/gateway locally with npm run dev:client / dev:gateway.
+# Optional: use docker-compose --profile app up to also run gateway (and client build) in containers.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: game
+      POSTGRES_PASSWORD: game
+      POSTGRES_DB: ai_game
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U game -d ai_game"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Optional: gateway in Docker (for “full stack in containers”). Host port 3001 to avoid conflict with local dev on 3000.
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gateway
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+    depends_on:
+      redis:
+        condition: service_healthy
+    profiles:
+      - app
+
+volumes:
+  postgres_data:
