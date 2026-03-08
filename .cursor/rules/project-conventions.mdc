@@ -1,0 +1,12 @@
+---
+description: Project conventions and workflow; follow docs/workflow.md and PROJECT_ARCHITECTURE.md
+alwaysApply: true
+---
+
+# Project Conventions and Workflow
+
+1. **Feature work, PRs, and merges:** Always follow **docs/workflow.md**. That document defines: check branch, work on a branch, merge strategy, pull request, and document changes. When the user or a command asks to work on a feature, open a PR, or document changes, read and apply the relevant section of docs/workflow.md.
+
+2. **Architecture and releases:** When changing architecture, versioning, or release behavior, keep **PROJECT_ARCHITECTURE.md** up to date, especially **Section 13 (Versioning and Changelog)**. Use Added / Fixed / Removed as specified there or in CHANGELOG.md.
+
+3. **Tech stack and repo layout:** The technology stack and repository structure are defined in **PROJECT_ARCHITECTURE.md**. Prefer those choices over ad-hoc alternatives (e.g. React + Three.js for client, Node/TypeScript for backend, mono-repo layout under client/, services/, shared/, docs/).
