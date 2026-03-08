@@ -5,7 +5,8 @@ Browser-based multiplayer online RPG (Silkroad-inspired) — learning project fo
 ## Documentation
 
 - **[PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md)** — Architecture, tech stack, repo layout, versioning, and changelog.
-- **[docs/workflow.md](docs/workflow.md)** — Development workflow: branches, PRs, and documenting changes.
+- **[docs/workflow.md](docs/workflow.md)** — Development workflow: branches, PRs, plans and tasks, and documenting changes.
+- **[docs/plans/](docs/plans/)** — Feature plans and task lists (use `/create-plan`, `/start-task`, `/complete-task`).
 - **[docs/setup.md](docs/setup.md)** — Clone, install, and agent skills (Vercel skills.sh).
 
 ## Quick setup

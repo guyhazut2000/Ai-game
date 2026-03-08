@@ -114,3 +114,34 @@ npx skills add vercel-labs/agent-skills --skill react-best-practices
 ```
 
 After installation, commit any new or updated files under `.cursor/` and `.agents/` (Vercel skills install to `.agents/skills/`) so the team shares the same skills.
+
+---
+
+## 7. Plans and Tasks (software lifecycle per feature)
+
+Plans and task lists live in **docs/plans/** so both Cursor and Claude can read and update them. Each feature follows: **Plan (creates tasks) → Start task → Implement → Complete task (when it works) → PR / Document.**
+
+### Plan file location and format
+
+- **Path:** `docs/plans/<feature-name>.md` (e.g. `docs/plans/combat-damage.md`). Use kebab-case for the filename.
+- **Structure:** Each plan file must include:
+  - **Goal:** One or two sentences describing the feature.
+  - **Tasks:** A list of checkboxes. Use `- [ ]` for not done and `- [x]` for done. Optionally mark the current task with `(in progress)`.
+  - **Acceptance (optional):** How to verify the feature is done (e.g. tests pass, manual check).
+
+**Rules for agents:**
+
+1. **Creating a plan:** Use `/create-plan` or create a new file in `docs/plans/<feature-name>.md` with Goal, Tasks (`- [ ]` items), and optional Acceptance. Branch name should match (e.g. `feature/combat-damage`).
+2. **Starting a task:** Use `/start-task`. Follow Section 1 (check branch) and Section 2 (work on branch). Open the plan file, identify the next or chosen task, mark it `(in progress)`, and implement it. Remind the user to run `/complete-task` when it works.
+3. **Completing a task:** Use `/complete-task`. Verify the task works (run tests and lint). Then update the plan file: change `- [ ]` to `- [x]` for that task and remove `(in progress)`. Commit the change. If all tasks are done, remind the user to run `/create-pr` and `/document-changes` (Sections 4 and 5).
+4. **One plan = one feature:** One plan file and one feature branch per feature; all tasks for that feature are in the same plan file.
+
+### Lifecycle summary
+
+| Phase | Action | Command or doc |
+|-------|--------|-----------------|
+| Plan | Create plan with tasks in docs/plans/ | `/create-plan` or new file in docs/plans/ |
+| Start task | Check branch, create/use feature branch, implement one task | `/start-task` |
+| Verify | Run tests/lint | Part of `/complete-task` |
+| Complete task | Mark task done in plan, commit | `/complete-task` |
+| Feature done | Open PR, document changes | `/create-pr`, `/document-changes` |
