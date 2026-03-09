@@ -1,0 +1,30 @@
+# Build player-service (run from repo root)
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY services/player-service/package.json ./services/player-service/
+
+RUN npm ci
+
+COPY services/player-service ./services/player-service
+
+RUN npm run build -w player-service
+
+# Run player-service
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3002
+
+COPY package.json package-lock.json* ./
+COPY services/player-service/package.json ./services/player-service/
+
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/services/player-service ./services/player-service
+
+EXPOSE 3002
+WORKDIR /app/services/player-service
+CMD ["node", "dist/index.js"]

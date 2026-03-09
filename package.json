@@ -11,8 +11,12 @@
   "scripts": {
     "dev:client": "npm run dev -w client",
     "dev:gateway": "npm run dev -w gateway",
+    "dev:auth": "npm run dev -w auth-service",
+    "dev:player": "npm run dev -w player-service",
     "build:client": "npm run build -w client",
     "build:gateway": "npm run build -w gateway",
+    "build:auth": "npm run build -w auth-service",
+    "build:player": "npm run build -w player-service",
     "docker:infra": "docker compose up -d postgres redis",
     "docker:down": "docker compose down",
     "docker:app": "docker compose --profile app up --build"

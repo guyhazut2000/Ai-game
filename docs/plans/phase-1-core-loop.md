@@ -7,47 +7,47 @@ Deliver a working single-player-feel game loop: login → create/select characte
 ## Tasks
 
 ### Auth Service
-- [ ] Scaffold `services/auth-service` (Fastify + TypeScript)
-- [ ] PostgreSQL schema: `accounts` table (id, username, password_hash)
-- [ ] `POST /register` — create account (hash password with bcrypt)
-- [ ] `POST /login` — validate credentials, return JWT
-- [ ] JWT middleware utility in `shared`
+- [x] Scaffold `services/auth-service` (Fastify + TypeScript)
+- [x] PostgreSQL schema: `accounts` table (id, username, password_hash)
+- [x] `POST /register` — create account (hash password with bcrypt)
+- [x] `POST /login` — validate credentials, return JWT
+- [x] JWT middleware utility in `shared`
 
 ### Player Service
-- [ ] Scaffold `services/player-service` (Fastify + TypeScript)
-- [ ] PostgreSQL schema: `characters` table (id, account_id, name, class, level, xp, hp, mp, x, y)
-- [ ] `POST /characters` — create character (name, class; max 5 per account)
-- [ ] `GET /characters` — list characters for account
-- [ ] `GET /characters/:id` — get single character
+- [x] Scaffold `services/player-service` (Fastify + TypeScript)
+- [x] PostgreSQL schema: `characters` table (id, account_id, name, class, level, xp, hp, mp, x, y)
+- [x] `POST /characters` — create character (name, class; max 5 per account)
+- [x] `GET /characters` — list characters for account
+- [x] `GET /characters/:id` — get single character
 
 ### Gateway routing
-- [ ] Add auth and player service proxy routes to gateway (`/auth/*`, `/player/*`)
-- [ ] WebSocket server in gateway: accept connections, broadcast game events
+- [x] Add auth and player service proxy routes to gateway (`/auth/*`, `/player/*`)
+- [x] WebSocket server in gateway: accept connections, broadcast game events
 
 ### Game Service (in-process with gateway for Phase 1)
-- [ ] In-memory world state: player positions map (characterId → {x, y})
-- [ ] WebSocket message: `move` — validate and update position, broadcast to all players
-- [ ] Spawn static monsters in world (2–3 types, fixed positions, respawn timer)
+- [x] In-memory world state: player positions map (characterId → {x, y})
+- [x] WebSocket message: `move` — validate and update position, broadcast to all players
+- [x] Spawn static monsters in world (2–3 types, fixed positions, respawn timer)
 
 ### Combat
-- [ ] WebSocket message: `attack` — player attacks monster in range
-- [ ] Damage formula: `max(1, attacker.atk - defender.def)` with RNG variance
-- [ ] Monster retaliates (simple tick loop server-side)
-- [ ] On monster death: grant XP to attacker, roll loot drop
-- [ ] `PlayerLevelUp` when XP threshold reached (update character stats)
+- [x] WebSocket message: `attack` — player attacks monster in range
+- [x] Damage formula: `max(1, attacker.atk - defender.def)` with RNG variance
+- [x] Monster retaliates (simple tick loop server-side)
+- [x] On monster death: grant XP to attacker, roll loot drop
+- [x] `PlayerLevelUp` when XP threshold reached (update character stats)
 
 ### Client UI
-- [ ] Login / Register screen (React, calls gateway `/auth/*`)
-- [ ] Character selection screen (list characters, create new)
-- [ ] 3D game scene: render player avatar (box mesh) and other players
-- [ ] WASD / arrow-key movement (send `move` via WebSocket)
-- [ ] Render monsters in scene; click to attack (send `attack` via WebSocket)
-- [ ] HUD: HP bar, XP bar, level indicator
+- [x] Login / Register screen (React, calls gateway `/auth/*`)
+- [x] Character selection screen (list characters, create new)
+- [x] 3D game scene: render player avatar (box mesh) and other players
+- [x] WASD / arrow-key movement (send `move` via WebSocket)
+- [x] Render monsters in scene; click to attack (send `attack` via WebSocket)
+- [x] HUD: HP bar, XP bar, level indicator
 
 ### Infrastructure
-- [ ] Add PostgreSQL and Redis to `docker-compose.yml`
-- [ ] `.env.example` for auth-service and player-service
-- [ ] Database migration script (or Drizzle/Prisma minimal setup)
+- [x] Add PostgreSQL and Redis to `docker-compose.yml`
+- [x] `.env.example` for auth-service and player-service
+- [x] Database migration script (or Drizzle/Prisma minimal setup)
 
 ## Acceptance
 
