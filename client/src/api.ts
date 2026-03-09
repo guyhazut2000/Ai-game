@@ -1,9 +1,16 @@
 import type { Character } from "shared";
 
 async function req<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  const body = await res.json();
-  if (!res.ok) throw new Error((body as any).error ?? res.statusText);
+  let res: Response;
+  try {
+    res = await fetch(url, options);
+  } catch (err: any) {
+    throw new Error("Cannot reach server — is the gateway running on port 3000?");
+  }
+  const text = await res.text();
+  let body: any;
+  try { body = JSON.parse(text); } catch { body = { error: text }; }
+  if (!res.ok) throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
   return body as T;
 }
 

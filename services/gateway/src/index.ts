@@ -12,33 +12,45 @@ const app = Fastify({ logger: true });
 // ---- Health ----
 app.get("/health", async () => ({ status: "ok" }));
 
+// ---- Generic proxy helper ----
+async function proxy(
+  upstream: string,
+  req: { method: string; url: string; body: unknown; headers: Record<string, string | string[] | undefined> },
+  reply: { code: (n: number) => { send: (b: unknown) => unknown } },
+) {
+  try {
+    const response = await fetch(upstream, {
+      method: req.method,
+      headers: {
+        "content-type": "application/json",
+        ...(req.headers.authorization ? { authorization: req.headers.authorization as string } : {}),
+      },
+      body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
+    });
+    const text = await response.text();
+    let body: unknown;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = { error: text };
+    }
+    return reply.code(response.status).send(body);
+  } catch (err: any) {
+    app.log.error({ err, upstream }, "upstream unreachable");
+    return reply.code(502).send({ error: `Service unavailable: ${err.message}` });
+  }
+}
+
 // ---- Proxy: /auth/* → auth-service ----
-app.all<{ Params: { "*": string } }>("/auth/*", async (req, reply) => {
-  const path = req.url.replace("/auth", "");
-  const url = `${AUTH_SERVICE}${path}`;
-  const upstream = await fetch(url, {
-    method: req.method,
-    headers: { "content-type": "application/json" },
-    body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
-  });
-  const body = await upstream.json();
-  return reply.code(upstream.status).send(body);
+app.all("/auth/*", async (req, reply) => {
+  const path = req.url.slice("/auth".length) || "/";
+  return proxy(`${AUTH_SERVICE}${path}`, req as any, reply as any);
 });
 
 // ---- Proxy: /player/* → player-service ----
-app.all<{ Params: { "*": string } }>("/player/*", async (req, reply) => {
-  const path = req.url.replace("/player", "");
-  const url = `${PLAYER_SERVICE}${path}`;
-  const upstream = await fetch(url, {
-    method: req.method,
-    headers: {
-      "content-type": "application/json",
-      ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
-    },
-    body: req.method !== "GET" && req.method !== "HEAD" ? JSON.stringify(req.body) : undefined,
-  });
-  const body = await upstream.json();
-  return reply.code(upstream.status).send(body);
+app.all("/player/*", async (req, reply) => {
+  const path = req.url.slice("/player".length) || "/";
+  return proxy(`${PLAYER_SERVICE}${path}`, req as any, reply as any);
 });
 
 // ---- Start HTTP server then attach WebSocket ----
