@@ -9,8 +9,8 @@ Bootstrap the mono-repo with the folder structure from PROJECT_ARCHITECTURE.md, 
 - [x] Create mono-repo folder structure and root package.json (client, services/gateway, shared, docker)
 - [x] Bootstrap client: React + TypeScript + Vite + React Three Fiber, runnable blank 3D scene
 - [x] Add minimal gateway: Node + TypeScript (Fastify), health GET endpoint
-- [ ] Add shared package: minimal TypeScript types and export
-- [ ] Update PROJECT_ARCHITECTURE Section 13 or CHANGELOG when done
+- [x] Add shared package: minimal TypeScript types and export
+- [x] Update PROJECT_ARCHITECTURE Section 13 or CHANGELOG when done
 
 ## Acceptance
 

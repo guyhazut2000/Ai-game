@@ -476,4 +476,18 @@ Going forward, each new version gets a similar block: **Added** (features, syste
 
 ---
 
+### Actual Changelog
+
+## [Unreleased]
+
+## [0.1.0] - 2026-03-09
+### Added
+- Mono-repo scaffold: `client/`, `services/gateway/`, `shared/`, `docker/`.
+- Client: React + TypeScript + Vite + React Three Fiber; blank 3D scene.
+- Gateway: Fastify with `GET /health` endpoint.
+- Shared package: minimal TypeScript types and exports.
+- Docker Compose with gateway service definition.
+
+---
+
 *This document is the architectural blueprint for the multiplayer online RPG project. Use it to align implementation, onboarding, and future design decisions.*
