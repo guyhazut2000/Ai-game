@@ -239,6 +239,10 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
   });
   const isDraggingOrbit = useRef(false);
   const lastPointer = useRef<{ x: number; y: number } | null>(null);
+  // Left-click drag tracking
+  const leftDownPos = useRef<{ x: number; y: number } | null>(null);
+  const leftIsDragging = useRef(false);
+  const DRAG_THRESHOLD = 5; // px before left-click becomes a camera drag
 
   const { camera, gl } = useThree();
 
@@ -254,21 +258,61 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
     const el = gl.domElement;
     const onDown = (e: MouseEvent) => {
       if (e.button === 1 || e.button === 2) {
+        // Middle / right click — always orbit
         isDraggingOrbit.current = true;
         lastPointer.current = { x: e.clientX, y: e.clientY };
+      } else if (e.button === 0) {
+        // Left click — record start, decide later
+        leftDownPos.current = { x: e.clientX, y: e.clientY };
+        leftIsDragging.current = false;
       }
     };
     const onMove = (e: MouseEvent) => {
-      if (!isDraggingOrbit.current || !lastPointer.current) return;
-      const dx = e.clientX - lastPointer.current.x;
-      const dy = e.clientY - lastPointer.current.y;
-      lastPointer.current = { x: e.clientX, y: e.clientY };
-      orbitState.current.azimuth   -= dx * ORBIT_ROTATE_SPEED;
-      orbitState.current.elevation  = THREE.MathUtils.clamp(
-        orbitState.current.elevation - dy * ORBIT_ROTATE_SPEED, 0.15, Math.PI / 2 - 0.15,
-      );
+      // Right / middle drag
+      if (isDraggingOrbit.current && lastPointer.current) {
+        const dx = e.clientX - lastPointer.current.x;
+        const dy = e.clientY - lastPointer.current.y;
+        lastPointer.current = { x: e.clientX, y: e.clientY };
+        orbitState.current.azimuth  -= dx * ORBIT_ROTATE_SPEED;
+        orbitState.current.elevation = THREE.MathUtils.clamp(
+          orbitState.current.elevation - dy * ORBIT_ROTATE_SPEED, 0.15, Math.PI / 2 - 0.15,
+        );
+      }
+      // Left drag — activate orbit once threshold crossed
+      if (leftDownPos.current) {
+        const dx = e.clientX - leftDownPos.current.x;
+        const dy = e.clientY - leftDownPos.current.y;
+        if (!leftIsDragging.current && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          leftIsDragging.current = true;
+          lastPointer.current = { x: e.clientX, y: e.clientY };
+        }
+        if (leftIsDragging.current && lastPointer.current) {
+          const ddx = e.clientX - lastPointer.current.x;
+          const ddy = e.clientY - lastPointer.current.y;
+          lastPointer.current = { x: e.clientX, y: e.clientY };
+          orbitState.current.azimuth  += ddx * ORBIT_ROTATE_SPEED;
+          orbitState.current.elevation = THREE.MathUtils.clamp(
+            orbitState.current.elevation + ddy * ORBIT_ROTATE_SPEED, 0.15, Math.PI / 2 - 0.15,
+          );
+        }
+      }
     };
-    const onStop  = () => { isDraggingOrbit.current = false; lastPointer.current = null; };
+    const onStop = (e: MouseEvent) => {
+      if (e.button === 1 || e.button === 2) {
+        isDraggingOrbit.current = false;
+        lastPointer.current = null;
+      } else if (e.button === 0) {
+        leftDownPos.current = null;
+        leftIsDragging.current = false;
+        lastPointer.current = null;
+      }
+    };
+    const onLeave = () => {
+      isDraggingOrbit.current = false;
+      leftDownPos.current = null;
+      leftIsDragging.current = false;
+      lastPointer.current = null;
+    };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       orbitState.current.radius = THREE.MathUtils.clamp(
@@ -279,14 +323,14 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
     el.addEventListener("mousedown", onDown);
     el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseup", onStop);
-    el.addEventListener("mouseleave", onStop);
+    el.addEventListener("mouseleave", onLeave);
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
     return () => {
       el.removeEventListener("mousedown", onDown);
       el.removeEventListener("mousemove", onMove);
       el.removeEventListener("mouseup", onStop);
-      el.removeEventListener("mouseleave", onStop);
+      el.removeEventListener("mouseleave", onLeave);
       el.removeEventListener("wheel", onWheel);
     };
   }, [gl]);
