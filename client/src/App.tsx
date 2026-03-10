@@ -6,18 +6,30 @@ import { GameScreen } from "./screens/GameScreen";
 
 type View = "login" | "charSelect" | "game";
 
+const STORAGE_KEY = "auth_token";
+
 export default function App() {
-  const [view, setView] = useState<View>("login");
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? "");
+  const [view, setView] = useState<View>(() => (localStorage.getItem(STORAGE_KEY) ? "charSelect" : "login"));
   const [character, setCharacter] = useState<Character | null>(null);
+
+  function handleLogin(t: string) {
+    localStorage.setItem(STORAGE_KEY, t);
+    setToken(t);
+    setView("charSelect");
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(STORAGE_KEY);
+    setToken("");
+    setCharacter(null);
+    setView("login");
+  }
 
   if (view === "login") {
     return (
       <LoginScreen
-        onLogin={(t) => {
-          setToken(t);
-          setView("charSelect");
-        }}
+        onLogin={(t) => handleLogin(t)}
       />
     );
   }
@@ -30,6 +42,7 @@ export default function App() {
           setCharacter(char);
           setView("game");
         }}
+        onLogout={handleLogout}
       />
     );
   }

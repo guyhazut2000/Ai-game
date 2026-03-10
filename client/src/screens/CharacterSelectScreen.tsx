@@ -5,6 +5,7 @@ import { listCharacters, createCharacter } from "../api";
 interface Props {
   token: string;
   onSelect: (character: Character) => void;
+  onLogout?: () => void;
 }
 
 const CLASS_COLORS: Record<CharacterClass, string> = {
@@ -78,7 +79,7 @@ const s = {
   } as React.CSSProperties,
 };
 
-export function CharacterSelectScreen({ token, onSelect }: Props) {
+export function CharacterSelectScreen({ token, onSelect, onLogout }: Props) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -89,7 +90,13 @@ export function CharacterSelectScreen({ token, onSelect }: Props) {
   useEffect(() => {
     listCharacters(token)
       .then(({ characters }) => setCharacters(characters))
-      .catch(() => setError("Failed to load characters"));
+      .catch((err: any) => {
+        if (err.message?.includes("401") || err.message?.toLowerCase().includes("unauthorized")) {
+          onLogout?.();
+        } else {
+          setError("Failed to load characters");
+        }
+      });
   }, [token]);
 
   async function handleCreate(e: React.FormEvent) {
