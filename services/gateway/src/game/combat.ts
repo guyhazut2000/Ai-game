@@ -1,7 +1,6 @@
 import { world } from "./world.js";
 import { rollDrop } from "./monsters.js";
-
-const ATTACK_RANGE = 3;
+import { ATTACK_RANGE } from "shared";
 const XP_PER_LEVEL = (level: number) => level * 100;
 
 function calcDamage(atk: number, def: number): number {

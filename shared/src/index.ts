@@ -3,6 +3,9 @@
  */
 export const APP_NAME = "ai-game";
 
+// Shared combat constants
+export const ATTACK_RANGE = 3;
+
 export type CharacterClass = "warrior" | "archer" | "magician";
 
 export interface Character {

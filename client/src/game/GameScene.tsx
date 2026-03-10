@@ -4,6 +4,7 @@ import { Sky, Html, useGLTF, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { Monster } from "shared";
+import { ATTACK_RANGE } from "shared";
 import type { RemotePlayer } from "./useGameSocket";
 
 interface Props {
@@ -66,9 +67,18 @@ const MONSTER_CONFIGS: Record<string, { shadowR: number; labelColor: string }> =
 
 // ─── Monster ──────────────────────────────────────────────────────────────────
 
-function MonsterMesh({ monster, onClick }: { monster: Monster; onClick: () => void }) {
+function MonsterMesh({
+  monster,
+  onClick,
+  localPos,
+}: {
+  monster: Monster;
+  onClick: () => void;
+  localPos: React.MutableRefObject<THREE.Vector3>;
+}) {
   const gltf = useGLTF("/assets/monster.glb");
   const group = useRef<THREE.Group>(null);
+  const threatRingMat = useRef<THREE.MeshBasicMaterial | null>(null);
 
   const clonedScene = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf.scene]);
   const { scale, offsetY } = useMemo(() => fitModel(gltf.scene, MONSTER_TARGET_HEIGHT), [gltf.scene]);
@@ -87,8 +97,30 @@ function MonsterMesh({ monster, onClick }: { monster: Monster; onClick: () => vo
   const hpColor = hpRatio > 0.5 ? "#44dd44" : hpRatio > 0.25 ? "#ddcc22" : "#ee3333";
   const cfg = MONSTER_CONFIGS[monster.type] ?? { shadowR: 0.45, labelColor: "#ffaaaa" };
 
+  // Update threat ring opacity based on distance to local player without causing re-renders
+  useFrame(() => {
+    if (!threatRingMat.current) return;
+    const dx = localPos.current.x - monster.x;
+    const dz = localPos.current.z - monster.y;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const inRange = dist <= ATTACK_RANGE;
+    threatRingMat.current.opacity = inRange ? 0.38 : 0.06;
+    threatRingMat.current.color.set(inRange ? "#ff3333" : "#aa4444");
+  });
+
   return (
     <group ref={group} position={[monster.x, 0, monster.y]}>
+      {/* Threat range (monster can hit player) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <ringGeometry args={[ATTACK_RANGE - 0.06, ATTACK_RANGE, 40]} />
+        <meshBasicMaterial
+          ref={threatRingMat}
+          color="#aa4444"
+          opacity={0.06}
+          transparent
+        />
+      </mesh>
+
       {/* Ground shadow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <circleGeometry args={[cfg.shadowR, 18]} />
@@ -204,6 +236,12 @@ function LocalPlayerMesh({ localPos, name, isMoving, facingAngle }: LocalPlayerP
 
   return (
     <group ref={group}>
+      {/* Player attack range indicator */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.022, 0]}>
+        <ringGeometry args={[ATTACK_RANGE - 0.06, ATTACK_RANGE, 40]} />
+        <meshBasicMaterial color="#4aff4a" opacity={0.25} transparent />
+      </mesh>
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <circleGeometry args={[0.42, 18]} />
         <meshBasicMaterial color="#000" opacity={0.3} transparent />
@@ -399,7 +437,12 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
       ))}
 
       {[...monsters.values()].map((m) => (
-        <MonsterMesh key={m.id} monster={m} onClick={() => onAttack(m.id)} />
+        <MonsterMesh
+          key={m.id}
+          monster={m}
+          localPos={localPos}
+          onClick={() => onAttack(m.id)}
+        />
       ))}
     </>
   );
