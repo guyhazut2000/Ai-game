@@ -15,7 +15,8 @@ interface Props {
   onAttack: (monsterId: string) => void;
 }
 
-const MOVE_SPEED = 0.08;
+// Movement speed in world units per second
+const MOVE_SPEED = 6;
 
 const keys = new Set<string>();
 
@@ -71,35 +72,71 @@ function OtherPlayer({ player }: { player: RemotePlayer }) {
 
 export function GameScene({ localX, localY, localName, players, monsters, onMove, onAttack }: Props) {
   const localPos = useRef(new THREE.Vector3(localX, 0, localY));
+  const localGroupRef = useRef<THREE.Group | null>(null);
   const { camera } = useThree();
 
   useEffect(() => {
-    const down = (e: KeyboardEvent) => keys.add(e.key.toLowerCase());
-    const up = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
+    const down = (e: KeyboardEvent) => {
+      // Use code for consistent WASD/arrow detection and avoid scroll
+      const code = e.code.toLowerCase();
+      if (code === "keyw" || code === "keys" || code === "keya" || code === "keyd" || code.startsWith("arrow")) {
+        e.preventDefault();
+        keys.add(code);
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      const code = e.code.toLowerCase();
+      keys.delete(code);
+    };
+    const blur = () => {
+      keys.clear();
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
   }, []);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     let moved = false;
-    if (keys.has("w") || keys.has("arrowup"))    { localPos.current.z -= MOVE_SPEED; moved = true; }
-    if (keys.has("s") || keys.has("arrowdown"))  { localPos.current.z += MOVE_SPEED; moved = true; }
-    if (keys.has("a") || keys.has("arrowleft"))  { localPos.current.x -= MOVE_SPEED; moved = true; }
-    if (keys.has("d") || keys.has("arrowright")) { localPos.current.x += MOVE_SPEED; moved = true; }
-    if (moved) onMove(localPos.current.x, localPos.current.z);
-    // Camera follows player (isometric offset)
-    camera.position.lerp(
-      new THREE.Vector3(localPos.current.x + 6, 8, localPos.current.z + 6),
-      0.1,
-    );
+    let dx = 0;
+    let dz = 0;
+
+    if (keys.has("keyw") || keys.has("arrowup")) dz -= 1;
+    if (keys.has("keys") || keys.has("arrowdown")) dz += 1;
+    if (keys.has("keya") || keys.has("arrowleft")) dx -= 1;
+    if (keys.has("keyd") || keys.has("arrowright")) dx += 1;
+
+    if (dx !== 0 || dz !== 0) {
+      // Normalize so diagonal movement isn't faster
+      const len = Math.hypot(dx, dz) || 1;
+      dx /= len;
+      dz /= len;
+
+      const distance = MOVE_SPEED * delta;
+      localPos.current.x += dx * distance;
+      localPos.current.z += dz * distance;
+      moved = true;
+    }
+
+    if (moved) {
+      onMove(localPos.current.x, localPos.current.z);
+    }
+
+    // Apply updated position to the local player mesh
+    if (localGroupRef.current) {
+      localGroupRef.current.position.x = localPos.current.x;
+      localGroupRef.current.position.z = localPos.current.z;
+    }
+
+    // Camera follows player (isometric offset) without extra lag
+    camera.position.set(localPos.current.x + 6, 8, localPos.current.z + 6);
     camera.lookAt(localPos.current);
   });
-
-  // Sync external position updates (world_state)
-  useEffect(() => {
-    localPos.current.set(localX, 0, localY);
-  }, [localX, localY]);
 
   return (
     <>
@@ -115,7 +152,7 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
       <gridHelper args={[60, 60, "#1a3d18", "#244b20"]} position={[0, 0.01, 0]} />
 
       {/* Local player */}
-      <group position={[localPos.current.x, 0.75, localPos.current.z]}>
+      <group ref={localGroupRef} position={[localPos.current.x, 0.75, localPos.current.z]}>
         <mesh castShadow>
           <boxGeometry args={[0.8, 1.5, 0.8]} />
           <meshStandardMaterial color="#4a9fdf" />
