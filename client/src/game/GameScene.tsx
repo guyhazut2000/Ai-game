@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Sky, Html } from "@react-three/drei";
+import { Sky, Html, useGLTF, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
 import type { Monster } from "shared";
 import type { RemotePlayer } from "./useGameSocket";
@@ -53,6 +53,15 @@ const MONSTER_CONFIGS: Record<string, MonsterConfig> = {
   },
 };
 
+function CrystalMonsterModel({ onClick }: { onClick: () => void }) {
+  const { scene } = useGLTF("/assets/monster.glb");
+  return (
+    <group onClick={onClick} castShadow>
+      <primitive object={scene} position={[0, 0, 0]} scale={0.6} />
+    </group>
+  );
+}
+
 function MonsterMesh({ monster, onClick }: { monster: Monster; onClick: () => void }) {
   const hpRatio = Math.max(0, monster.hp / monster.maxHp);
   const cfg: MonsterConfig = MONSTER_CONFIGS[monster.type] ?? {
@@ -76,49 +85,9 @@ function MonsterMesh({ monster, onClick }: { monster: Monster; onClick: () => vo
         <meshBasicMaterial color="#000" opacity={0.28} transparent />
       </mesh>
 
-      {cfg.isSlime ? (
-        /* Slime — squashed sphere */
-        <mesh
-          position={[0, cfg.bodyW * 0.42, 0]}
-          scale={[1, 0.72, 1]}
-          onClick={onClick}
-          castShadow
-        >
-          <sphereGeometry args={[cfg.bodyW * 0.7, 14, 10]} />
-          <meshStandardMaterial color={cfg.bodyColor} emissive={cfg.emissive} roughness={0.25} metalness={0.05} />
-        </mesh>
-      ) : (
-        <>
-          {/* Body */}
-          <mesh position={[0, cfg.bodyH / 2, 0]} onClick={onClick} castShadow>
-            <boxGeometry args={[cfg.bodyW, cfg.bodyH, cfg.bodyD]} />
-            <meshStandardMaterial color={cfg.bodyColor} emissive={cfg.emissive} roughness={0.75} />
-          </mesh>
-          {/* Arms */}
-          <mesh position={[-(cfg.bodyW / 2 + 0.1), cfg.bodyH * 0.6, 0]} onClick={onClick} castShadow>
-            <boxGeometry args={[0.18, cfg.bodyH * 0.55, 0.18]} />
-            <meshStandardMaterial color={cfg.bodyColor} emissive={cfg.emissive} roughness={0.75} />
-          </mesh>
-          <mesh position={[(cfg.bodyW / 2 + 0.1), cfg.bodyH * 0.6, 0]} onClick={onClick} castShadow>
-            <boxGeometry args={[0.18, cfg.bodyH * 0.55, 0.18]} />
-            <meshStandardMaterial color={cfg.bodyColor} emissive={cfg.emissive} roughness={0.75} />
-          </mesh>
-          {/* Head */}
-          <mesh position={[0, cfg.bodyH + cfg.headR * 0.95, 0]} onClick={onClick} castShadow>
-            <sphereGeometry args={[cfg.headR, 12, 9]} />
-            <meshStandardMaterial color={cfg.bodyColor} emissive={cfg.emissive} roughness={0.65} />
-          </mesh>
-          {/* Eyes */}
-          <mesh position={[cfg.headR * 0.38, cfg.bodyH + cfg.headR * 1.1, -(cfg.headR * 0.82)]}>
-            <sphereGeometry args={[cfg.headR * 0.18, 6, 5]} />
-            <meshBasicMaterial color="#ff2222" />
-          </mesh>
-          <mesh position={[-(cfg.headR * 0.38), cfg.bodyH + cfg.headR * 1.1, -(cfg.headR * 0.82)]}>
-            <sphereGeometry args={[cfg.headR * 0.18, 6, 5]} />
-            <meshBasicMaterial color="#ff2222" />
-          </mesh>
-        </>
-      )}
+      <group position={[0, totalH * 0.5, 0]}>
+        <CrystalMonsterModel onClick={onClick} />
+      </group>
 
       {/* Name + HP bar */}
       <Html center position={[0, labelY, 0]} style={{ pointerEvents: "none" }}>
@@ -164,11 +133,33 @@ function MonsterMesh({ monster, onClick }: { monster: Monster; onClick: () => vo
 
 // ─── Player mesh (humanoid) ───────────────────────────────────────────────────
 
+function PlayerModel() {
+  const gltf = useGLTF("/assets/character.glb");
+  const group = useRef<THREE.Group>(null);
+  const { actions } = useAnimations(gltf.animations ?? [], group);
+
+  useEffect(() => {
+    if (!actions) return;
+    const firstAction = Object.values(actions)[0];
+    if (!firstAction) return;
+    firstAction.reset().play();
+    return () => {
+      firstAction.stop();
+    };
+  }, [actions]);
+
+  return (
+    <group ref={group}>
+      <primitive object={gltf.scene} position={[0, 1.1, 0]} scale={0.65} castShadow />
+    </group>
+  );
+}
+
 function PlayerMesh({
-  x, y, name, bodyColor, nameColor, isLocal,
+  x, y, name, nameColor, isLocal,
 }: {
   x: number; y: number; name: string;
-  bodyColor: string; nameColor: string; isLocal?: boolean;
+  nameColor: string; isLocal?: boolean;
 }) {
   return (
     <group position={[x, 0, y]}>
@@ -178,47 +169,7 @@ function PlayerMesh({
         <meshBasicMaterial color="#000" opacity={0.3} transparent />
       </mesh>
 
-      {/* Legs */}
-      <mesh position={[-0.17, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.22, 0.7, 0.22]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.8} />
-      </mesh>
-      <mesh position={[0.17, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.22, 0.7, 0.22]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.8} />
-      </mesh>
-
-      {/* Torso */}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <boxGeometry args={[0.75, 0.65, 0.42]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.7} />
-      </mesh>
-
-      {/* Arms */}
-      <mesh position={[-0.52, 1.0, 0]} castShadow>
-        <boxGeometry args={[0.2, 0.6, 0.2]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.8} />
-      </mesh>
-      <mesh position={[0.52, 1.0, 0]} castShadow>
-        <boxGeometry args={[0.2, 0.6, 0.2]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.8} />
-      </mesh>
-
-      {/* Head */}
-      <mesh position={[0, 1.6, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.45]} />
-        <meshStandardMaterial color={bodyColor} roughness={0.65} />
-      </mesh>
-
-      {/* Eyes */}
-      <mesh position={[0.13, 1.63, -0.23]}>
-        <boxGeometry args={[0.1, 0.08, 0.05]} />
-        <meshBasicMaterial color="#ffffff" />
-      </mesh>
-      <mesh position={[-0.13, 1.63, -0.23]}>
-        <boxGeometry args={[0.1, 0.08, 0.05]} />
-        <meshBasicMaterial color="#ffffff" />
-      </mesh>
+      <PlayerModel />
 
       {/* Name label */}
       <Html center position={[0, 2.05, 0]} style={{ pointerEvents: "none" }}>
@@ -293,7 +244,6 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
         x={localPos.current.x}
         y={localPos.current.z}
         name={localName}
-        bodyColor="#3a7bfd"
         nameColor="#88bbff"
         isLocal
       />
@@ -305,7 +255,6 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
           x={p.x}
           y={p.y}
           name={p.name}
-          bodyColor="#e8a44a"
           nameColor="#ffd488"
         />
       ))}
@@ -317,3 +266,6 @@ export function GameScene({ localX, localY, localName, players, monsters, onMove
     </>
   );
 }
+
+useGLTF.preload("/assets/monster.glb");
+useGLTF.preload("/assets/character.glb");
