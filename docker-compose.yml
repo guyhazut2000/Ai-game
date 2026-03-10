@@ -34,7 +34,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.auth-service
     ports:
-      - “3001:3001”
+      - "3001:3001"
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -51,7 +51,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.player-service
     ports:
-      - “3002:3002”
+      - "3002:3002"
     environment:
       NODE_ENV: development
       PORT: 3002
@@ -68,7 +68,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.gateway
     ports:
-      - “3000:3000”
+      - "3000:3000"
     environment:
       NODE_ENV: development
       PORT: 3000
